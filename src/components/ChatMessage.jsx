@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 
 const ChatMessage = (props) => {
   const message = props.message;
   const createdAt = props.createdAt;
+  const [dropdown, setDropdown] = useState(false);
+
   const formatTime = (createdAt) => {
     const date = new Date(createdAt);
     return date.toLocaleTimeString([], {
@@ -10,18 +12,16 @@ const ChatMessage = (props) => {
       minute: "2-digit",
     });
   };
+
   return (
-    <div className="flex items-start gap-2.5 ml-[5%] my-[1%]">
-      <div className="flex flex-col w-full max-w-[320px] leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
+    <div className="flex items-start gap-2.5 ml-[5%] my-[1%] h-auto">
+      <div className="flex flex-col w-full max-w-[320px] p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          {/* <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            Bonnie Green
-          </span> */}
           <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
             {formatTime(createdAt)}
           </span>
         </div>
-        <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">
+        <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white whitespace-normal break-words">
           {message}
         </p>
         <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
@@ -29,8 +29,8 @@ const ChatMessage = (props) => {
         </span>
       </div>
 
-      {/* Dropdown Button */}
       <button
+        onClick={() => setDropdown(!dropdown)}
         id="dropdownMenuIconButton"
         data-dropdown-toggle="dropdownDots"
         data-dropdown-placement="bottom-start"
@@ -48,57 +48,42 @@ const ChatMessage = (props) => {
         </svg>
       </button>
 
-      {/* Dropdown Menu */}
-      <div
-        id="dropdownDots"
-        className="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-40 dark:bg-gray-700 dark:divide-gray-600"
-      >
-        <ul
-          className="py-2 text-sm text-gray-700 dark:text-gray-200"
-          aria-labelledby="dropdownMenuIconButton"
+      {dropdown ? (
+        <div
+          id="dropdownDots"
+          className="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-40 dark:bg-gray-700 dark:divide-gray-600"
         >
-          <li>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-            >
-              Reply
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-            >
-              Forward
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-            >
-              Copy
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-            >
-              Report
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-            >
-              Delete
-            </a>
-          </li>
-        </ul>
-      </div>
+          <ul
+            className=" text-sm text-gray-700 dark:text-gray-200"
+            aria-labelledby="dropdownMenuIconButton"
+          >
+            <li>
+              <a
+                href="#"
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+              >
+                Reply
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+              >
+                Forward
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+              >
+                Delete
+              </a>
+            </li>
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 };
