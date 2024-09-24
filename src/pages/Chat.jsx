@@ -20,6 +20,8 @@ const Chat = () => {
   const [status, setStatus] = useState(false);
   const [users, setUsers] = useState([]);
   const messagesEndRef = useRef(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,8 +56,8 @@ const Chat = () => {
   };
 
   const handleSelectConversation = (data) => {
+    console.log(data);
     setReceiverId(data.receiverId);
-
     setConversationId(data.conversationId);
     setStatus(false);
     if (data.status === true) {
@@ -92,10 +94,11 @@ const Chat = () => {
       .catch((err) => console.log(err));
   };
   const handleSelectUser = (data) => {
-    if (getMessages.userStatus === true) {
+    if (data.status === true) {
       setStatus(true);
+    } else {
+      setStatus(false);
     }
-    setStatus(false);
     setReceiverId(data.userId);
     setConversationId("new");
     setTimeout(() => {
@@ -116,7 +119,9 @@ const Chat = () => {
   }, []);
   useEffect(() => {
     socket.emit("addUser", id);
-
+    socket.on("getUsers", (users) => {
+      console.log(users);
+    });
     socket.on("getMessage", (data) => {
       if (data.conversationId === conversationId) {
         setGetMessages((prev) => ({
@@ -137,7 +142,7 @@ const Chat = () => {
     return () => {
       socket.off("getMessage");
     };
-  }, [id, conversationId, socket]);
+  }, [id, conversationId, socket, conversation]);
 
   return (
     <>
@@ -147,8 +152,12 @@ const Chat = () => {
             <div className="w-[30%] pl-[1%] border-x bg-sky-100">
               <h1 className="text-3xl py-3 pl-4 mt-4">QuikChat</h1>
               <span className=" flex items-center px-4 py-2 gap-3">
-                <div className="w-[14%] border-2 border-green-600 rounded-full p-1 ">
-                  <img src={User} alt="" />
+                <div className="w-[14%] border-2 border-green-600 rounded-full ">
+                  <img
+                    src={`http://localhost:3030//uploads/${data.profilePic}`}
+                    alt=""
+                    className="rounded-full"
+                  />
                 </div>
                 <div>
                   <p className="text-xl font-semibold">{data.fullName}</p>
@@ -156,66 +165,99 @@ const Chat = () => {
                 </div>
               </span>
               <div className=" mx-4 my-2 p-2 border rounded-xl bg-white ">
-                <input type="text" placeholder="search" />
+                <input
+                  type="text"
+                  placeholder="search"
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="outline-none"
+                />
               </div>
               <div className="flex gap-3 mx-4 my-2 ">
-                <button className="border px-2 py-1 bg-gray-300 rounded-full">
+                <button
+                  onClick={() => setFilter("all")}
+                  className="border px-2 py-1 active:bg-sky-400 bg-gray-300 rounded-full"
+                >
                   All
                 </button>
                 <button className="border px-2 py-1 bg-gray-300 rounded-full">
                   Unread
                 </button>
-                <button className="border px-2 py-1 bg-gray-300 rounded-full">
-                  Groups
+                <button
+                  onClick={() => setFilter("conversation")}
+                  className="border px-2 py-1 bg-gray-300 rounded-full"
+                >
+                  Conversation
                 </button>
               </div>
               <div className="overflow-y-auto h-[65%]">
-                {conversation?.map((data, i) => {
-                  return (
-                    <div
-                      key={i}
-                      className="border-b cursor-pointer flex items-center mx-4 p-2 gap-3"
-                      onClick={() => {
-                        fetchMessages(data.conversationId, data.fullName);
-                        handleSelectConversation(data);
-                      }}
-                    >
-                      <div
-                        className={`w-[12%] border-2 rounded-full p-1  ${
-                          data.status ? "border-green-600" : "border-slate-400"
-                        }`}
-                      >
-                        <img src={User} alt="" />
-                      </div>
-                      <div className="flex w-full justify-between gap-4">
-                        <div>{data.fullName}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {users?.map((data) => {
-                  return (
-                    <div
-                      className="  border-b cursor-pointer flex items-center mx-4 p-2 gap-3"
-                      onClick={() => {
-                        handleSelectUser(data);
-                        ReciverId = data.userId;
-                      }}
-                    >
-                      <div
-                        className={`w-[12%] border-2 rounded-full p-1  ${
-                          data.status ? "border-green-600" : "border-slate-400"
-                        }`}
-                      >
-                        <img src={User} alt="" />
-                      </div>
-                      <div className="flex w-full justify-between gap-4">
-                        <div>{data.fullName}</div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {filter === "conversation"
+                  ? conversation
+                      ?.filter((item) => {
+                        return search.toLowerCase() === ""
+                          ? item
+                          : item.fullName.toLowerCase().includes(search);
+                      })
+                      .map((data, i) => {
+                        return (
+                          <div
+                            key={i}
+                            className="border-b cursor-pointer flex items-center mx-4 p-2 gap-3"
+                            onClick={() => {
+                              fetchMessages(data.conversationId, data.fullName);
+                              handleSelectConversation(data);
+                            }}
+                          >
+                            <div
+                              className={`w-[12%] border-2 rounded-full p-1  ${
+                                data.status
+                                  ? "border-green-600"
+                                  : "border-slate-400"
+                              }`}
+                            >
+                              <img src={User} alt="" />
+                            </div>
+                            <div className="flex w-full justify-between gap-4">
+                              <div>{data.fullName}</div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  : null}
+                {filter === "all" &&
+                  users
+                    ?.filter((item) => {
+                      return search.toLowerCase() === ""
+                        ? item
+                        : item.fullName.toLowerCase().includes(search);
+                    })
+                    .map((data) => {
+                      return (
+                        <div
+                          className="  border-b cursor-pointer flex items-center mx-4 p-2 gap-3"
+                          onClick={() => {
+                            handleSelectUser(data);
+                            ReciverId = data.userId;
+                          }}
+                        >
+                          <div
+                            className={`w-[13%] border-2 rounded-full p-1  ${
+                              data.status
+                                ? "border-green-600"
+                                : "border-slate-400"
+                            }`}
+                          >
+                            <img
+                              src={`http://localhost:3030//uploads/${data.profilePic}`}
+                              alt=""
+                              className="rounded-full"
+                            />
+                          </div>
+                          <div className="flex w-full justify-between gap-4">
+                            <div>{data.fullName}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
               </div>
             </div>
             <div className="w-[70%] h-[100vh] relative">

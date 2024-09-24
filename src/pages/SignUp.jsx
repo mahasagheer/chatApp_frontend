@@ -1,41 +1,51 @@
-import { useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import { useNavigate } from "react-router";
-import { Link } from "react-router-dom";
+import axios from "axios";
 
-const Login = () => {
+const SignUp = (e) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [profilePic, setProfilePic] = useState("");
   const Navigate = useNavigate();
   const handleSubmit = (e) => {
     e.preventDefault();
+    const formData = new FormData();
+    formData.append("fullName", fullName);
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("profilePic", profilePic);
     axios
-      .post("http://localhost:3030/login", {
-        email: email,
-        password: password,
+      .post("http://localhost:3030/users", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       })
       .then((res) => {
-        console.log(res);
-        const userData = res.data.data;
-        const token = res.data.token;
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            token: token,
-            data: userData,
-          })
-        );
-        Navigate("/");
+        Navigate("/login");
       })
       .catch((err) => console.log(err));
+  };
+  const handleFileChange = (e) => {
+    setProfilePic(e.target.files[0]);
   };
   return (
     <>
       <section className="bg-[url('./public/pexels-fauxels-3184401.jpg')] bg-center bg-cover w-full h-[100vh]  flex justify-center items-center">
         <div className="border border-black min-w-[25%] min-h-[25%]  py-8 backdrop-blur-lg rounded-2xl">
-          <h1 className="text-4xl text-center pb-3 ">Sign In</h1>
-          <p className="text-xl text-center ">Have an account?</p>
+          <h1 className="text-4xl text-center pb-3 ">Sign up</h1>
+          <p className="text-base text-center px-4 ">
+            Create an account to connect with friends, share
+            <br /> messages, and be a part of exciting conversations!
+          </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-4">
+            <input
+              type="text"
+              placeholder="Username"
+              name="fullName"
+              id="fullName"
+              required
+              onChange={(e) => setFullName(e.target.value)}
+              className="p-3 rounded-full outline-none border border-black"
+            />
             <input
               type="email"
               placeholder="example@gmail.com"
@@ -54,18 +64,18 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="p-3 rounded-full outline-none border border-black"
             />
+            <input
+              onChange={handleFileChange}
+              type="file"
+              name="profilePic"
+              id="profilePic"
+            />
             <button
               type="submit"
               className="p-3 rounded-full bg-black text-white"
             >
-              Sign In
+              Sign Up
             </button>
-            <p className="text-center">
-              Don't have an account?{" "}
-              <Link to="/sign_up" className="font-bold">
-                Sign Up
-              </Link>
-            </p>
           </form>
         </div>
       </section>
@@ -73,4 +83,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default SignUp;
