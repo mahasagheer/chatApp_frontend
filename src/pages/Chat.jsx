@@ -22,6 +22,8 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [profilePic, setProfilePic] = useState("");
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,6 +62,8 @@ const Chat = () => {
     setReceiverId(data.receiverId);
     setConversationId(data.conversationId);
     setStatus(false);
+    setProfilePic(data.profilePic);
+
     if (data.status === true) {
       setStatus(true);
     }
@@ -75,7 +79,8 @@ const Chat = () => {
       .catch((err) => console.log(err));
   };
   const fetchMessages = (conversationId, fullName) => {
-    // console.log(receiverId);
+    console.log(ReciverId);
+    console.log(conversationId);
     axios
       .get(`http://localhost:3030/messages/${conversationId}`, {
         headers: {
@@ -84,6 +89,7 @@ const Chat = () => {
         },
       })
       .then((res) => {
+        console.log(res);
         setGetMessages({
           messages: res.data,
           receiverName: fullName,
@@ -100,9 +106,12 @@ const Chat = () => {
       setStatus(false);
     }
     setReceiverId(data.userId);
+    setProfilePic(data.profilePic);
+    console.log(data);
     setConversationId("new");
+    console.log(conversationId);
     setTimeout(() => {
-      fetchMessages(data.conversationId, data.fullName);
+      fetchMessages(conversationId, data.fullName);
     }, 0);
   };
   const getAllUsers = () => {
@@ -142,7 +151,7 @@ const Chat = () => {
     return () => {
       socket.off("getMessage");
     };
-  }, [id, conversationId, socket, conversation]);
+  }, [id, conversationId, socket, conversation, users, status]);
 
   return (
     <>
@@ -208,13 +217,17 @@ const Chat = () => {
                             }}
                           >
                             <div
-                              className={`w-[12%] border-2 rounded-full p-1  ${
+                              className={`w-[13%] border-2 rounded-full p-1  ${
                                 data.status
                                   ? "border-green-600"
                                   : "border-slate-400"
                               }`}
                             >
-                              <img src={User} alt="" />
+                              <img
+                                src={`http://localhost:3030//uploads/${data.profilePic}`}
+                                alt=""
+                                className="rounded-full"
+                              />
                             </div>
                             <div className="flex w-full justify-between gap-4">
                               <div>{data.fullName}</div>
@@ -237,6 +250,7 @@ const Chat = () => {
                           onClick={() => {
                             handleSelectUser(data);
                             ReciverId = data.userId;
+                            fetchMessages(data.conversationId, data.fullName);
                           }}
                         >
                           <div
@@ -264,7 +278,11 @@ const Chat = () => {
               {getMessages.receiverName && (
                 <span className="flex items-center py-2 gap-3 ml-[5%] mt-[2%]">
                   <div className="w-[5%]">
-                    <img src={User} alt="" />
+                    <img
+                      src={`http://localhost:3030//uploads/${profilePic}`}
+                      alt=""
+                      className="rounded-full"
+                    />
                   </div>
                   <div>
                     <p className="text-xl">{getMessages.receiverName}</p>
@@ -317,6 +335,7 @@ const Chat = () => {
                   type="text"
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="type here"
+                  value={message}
                 />
                 <button type="submit" className="rounded-full px-4 bg-sky-500">
                   <FontAwesomeIcon icon={faCaretRight} size="2xl" />
