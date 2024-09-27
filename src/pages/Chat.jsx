@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCaretRight } from "@fortawesome/free-solid-svg-icons";
-import User from "../public/userImg-removebg-preview.png";
+import { faCaretRight, faVideo } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import VoiceCall from "../components/voiceCall";
 import ChatMessage from "../components/ChatMessage";
 import ReceiveChat from "../components/ReceiveChat";
-const socket = io.connect("http://localhost:3030");
+const socket = io.connect("http://localhost:3030", {
+  transports: ["websocket"],
+  upgrade: false,
+});
 const Chat = () => {
   const [message, setMessage] = useState("");
   const storedUser = localStorage.getItem("user");
@@ -24,6 +27,7 @@ const Chat = () => {
   const [filter, setFilter] = useState("all");
   const [profilePic, setProfilePic] = useState("");
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [receiverName, setReceiverName] = useState("");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,14 +55,13 @@ const Chat = () => {
           receiverId: receiverId,
           message: message,
         })
-        .then((res) => console.log(res))
+        .then((res) => res)
         .catch((err) => console.log(err));
     }
     setMessage("");
   };
 
   const handleSelectConversation = (data) => {
-    console.log(data);
     setReceiverId(data.receiverId);
     setConversationId(data.conversationId);
     setStatus(false);
@@ -79,8 +82,6 @@ const Chat = () => {
       .catch((err) => console.log(err));
   };
   const fetchMessages = (conversationId, fullName) => {
-    console.log(ReciverId);
-    console.log(conversationId);
     axios
       .get(`http://localhost:3030/messages/${conversationId}`, {
         headers: {
@@ -89,7 +90,6 @@ const Chat = () => {
         },
       })
       .then((res) => {
-        console.log(res);
         setGetMessages({
           messages: res.data,
           receiverName: fullName,
@@ -107,9 +107,7 @@ const Chat = () => {
     }
     setReceiverId(data.userId);
     setProfilePic(data.profilePic);
-    console.log(data);
     setConversationId("new");
-    console.log(conversationId);
     setTimeout(() => {
       fetchMessages(conversationId, data.fullName);
     }, 0);
@@ -129,7 +127,7 @@ const Chat = () => {
   useEffect(() => {
     socket.emit("addUser", id);
     socket.on("getUsers", (users) => {
-      console.log(users);
+      users;
     });
     socket.on("getMessage", (data) => {
       if (data.conversationId === conversationId) {
@@ -214,6 +212,7 @@ const Chat = () => {
                             onClick={() => {
                               fetchMessages(data.conversationId, data.fullName);
                               handleSelectConversation(data);
+                              setReceiverName(data.fullName);
                             }}
                           >
                             <div
@@ -251,6 +250,7 @@ const Chat = () => {
                             handleSelectUser(data);
                             ReciverId = data.userId;
                             fetchMessages(data.conversationId, data.fullName);
+                            setReceiverName(data.fullName);
                           }}
                         >
                           <div
@@ -274,28 +274,42 @@ const Chat = () => {
                     })}
               </div>
             </div>
-            <div className="w-[70%] h-[100vh] relative">
+            <div className="w-[70%] mx-10 h-[100vh] relative ">
               {getMessages.receiverName && (
-                <span className="flex items-center py-2 gap-3 ml-[5%] mt-[2%]">
-                  <div className="w-[5%]">
-                    <img
-                      src={`http://localhost:3030//uploads/${profilePic}`}
-                      alt=""
-                      className="rounded-full"
-                    />
+                <>
+                  <div className="flex bg-sky-100 rounded-full p-2 pr-[5%] justify-between ">
+                    <div className="flex items-center py-2 gap-3 ml-[5%] top-10">
+                      <div className="w-12">
+                        <img
+                          src={`http://localhost:3030//uploads/${profilePic}`}
+                          alt=""
+                          className="rounded-full"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xl">{getMessages.receiverName}</p>
+                        {status ? (
+                          <p className="text-green-600">Online</p>
+                        ) : (
+                          <p className="text-gray-400">Offline</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-5">
+                      <VoiceCall name={receiverName} profile={profilePic} />
+                      <button className="rounded-3xl w-10 hover:bg-white">
+                        <FontAwesomeIcon icon={faVideo} size="lg" />{" "}
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xl">{getMessages.receiverName}</p>
-                    {status ? (
-                      <p className="text-green-600">Online</p>
-                    ) : (
-                      <p className="text-gray-400">Offline</p>
-                    )}
-                  </div>
-                </span>
+                </>
               )}
 
-              <div className="h-[80%] overflow-y-scroll pr-4 pb-5">
+              <div
+                className={`h-[80%] pr-4 pb-5 ${
+                  receiverId ? "overflow-y-scroll " : "overflow-hidden"
+                }`}
+              >
                 {getMessages?.messages?.length > 0 ? (
                   getMessages?.messages.map((data, index) => {
                     if (data.user.userId === id) {
@@ -324,23 +338,27 @@ const Chat = () => {
                 )}
                 <div ref={messagesEndRef} />
               </div>
-
-              <form
-                className="flex w-[90%] absolute bottom-6 left-0 right-0 mx-auto"
-                onSubmit={sendMessage}
-              >
-                <input
-                  id="Input"
-                  className="border-2 border-sky-300 w-[87%] p-3 mx-[2%] rounded-xl outline-none"
-                  type="text"
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="type here"
-                  value={message}
-                />
-                <button type="submit" className="rounded-full px-4 bg-sky-500">
-                  <FontAwesomeIcon icon={faCaretRight} size="2xl" />
-                </button>
-              </form>
+              {receiverId && (
+                <form
+                  className="flex w-[90%] absolute bottom-6 left-0 right-0 mx-auto"
+                  onSubmit={sendMessage}
+                >
+                  <input
+                    id="Input"
+                    className="border-2 border-sky-300 w-[87%] p-3 mx-[2%] rounded-xl outline-none"
+                    type="text"
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="type here"
+                    value={message}
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full px-4 bg-sky-500"
+                  >
+                    <FontAwesomeIcon icon={faCaretRight} size="2xl" />
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>
