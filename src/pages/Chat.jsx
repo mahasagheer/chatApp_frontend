@@ -3,14 +3,14 @@ import { io } from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretRight, faVideo } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-import VoiceCall from "../components/voiceCall";
+import VoiceCallApp from "../components/VoiceCallingPeer";
 import ChatMessage from "../components/ChatMessage";
 import ReceiveChat from "../components/ReceiveChat";
-const socket = io.connect("http://localhost:3030", {
-  transports: ["websocket"],
-  upgrade: false,
-});
+import { useSocket } from "../provider/SocketProvider";
+import VideoCall from "../components/VideoCall";
+
 const Chat = () => {
+  const socket = useSocket();
   const [message, setMessage] = useState("");
   const storedUser = localStorage.getItem("user");
   const { data } = JSON.parse(storedUser);
@@ -26,8 +26,8 @@ const Chat = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [profilePic, setProfilePic] = useState("");
-  const [onlineUsers, setOnlineUsers] = useState([]);
   const [receiverName, setReceiverName] = useState("");
+  const [socketUsers, setSocketUsers] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -71,6 +71,7 @@ const Chat = () => {
       setStatus(true);
     }
   };
+  const receiver = users.find((user) => user.userId === receiverId);
   const fetchConversation = () => {
     axios
       .get(`http://localhost:3030/conversation/${data.userId}`)
@@ -124,10 +125,12 @@ const Chat = () => {
     fetchConversation();
     getAllUsers();
   }, []);
+  const receiverDetail = socketUsers.find((user) => user.userId === receiverId);
   useEffect(() => {
     socket.emit("addUser", id);
     socket.on("getUsers", (users) => {
-      users;
+      setSocketUsers(users);
+      console.log(users);
     });
     socket.on("getMessage", (data) => {
       if (data.conversationId === conversationId) {
@@ -296,10 +299,14 @@ const Chat = () => {
                       </div>
                     </div>
                     <div className="flex gap-5">
-                      <VoiceCall name={receiverName} profile={profilePic} />
-                      <button className="rounded-3xl w-10 hover:bg-white">
-                        <FontAwesomeIcon icon={faVideo} size="lg" />{" "}
-                      </button>
+                      <VoiceCallApp
+                        socketId={receiverDetail.socketId}
+                        receiver={receiver}
+                      />
+                      <VideoCall
+                        socketId={receiverDetail.socketId}
+                        receiver={receiver}
+                      />
                     </div>
                   </div>
                 </>

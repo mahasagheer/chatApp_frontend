@@ -19,7 +19,7 @@ const VoiceCall = (props) => {
   const [isMuted, setIsMuted] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioTrack, setAudioTrack] = useState(null);
-
+  const receiver = props.receiver;
   const handleMuteUnmute = () => {
     if (!audioTrack) {
       navigator.mediaDevices
@@ -38,11 +38,12 @@ const VoiceCall = (props) => {
             fileReader.readAsDataURL(audioBlob);
             fileReader.onloadend = () => {
               const base64String = fileReader.result;
-              console.log(base64String);
-              socket.emit("audioStream", base64String);
+              socket.emit("audioStream", {
+                audioData: base64String,
+                receiverId: receiver,
+              });
             };
           });
-
           recorder.start(100);
         })
         .catch((error) => {
@@ -69,8 +70,10 @@ const VoiceCall = (props) => {
   };
   useEffect(() => {
     socket.on("audioStream", (audioData) => {
+      console.log(audioData);
       const audioUrl =
         audioData.split(";")[0] + ";base64," + audioData.split(",")[1];
+      console.log(audioUrl);
       const audio = new Audio(audioUrl);
       if (!document.hidden) {
         audio.play();
@@ -81,7 +84,6 @@ const VoiceCall = (props) => {
       socket.off("audioStream");
     };
   }, [socket]);
-
   return (
     <>
       <button
@@ -117,9 +119,9 @@ const VoiceCall = (props) => {
                       className="p-2 bg-slate-400 py-2 rounded-full"
                     >
                       {isMuted ? (
-                        <FontAwesomeIcon icon={faMicrophone} size="lg" />
-                      ) : (
                         <FontAwesomeIcon icon={faMicrophoneSlash} size="lg" />
+                      ) : (
+                        <FontAwesomeIcon icon={faMicrophone} size="lg" />
                       )}
                     </button>
                     <button
